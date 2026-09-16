@@ -1,0 +1,23 @@
+# This defines the chatbot as one service. Add the `chatbot` service below
+# into the same compose file (and the same network) as your existing Ollama
+# container, so they can reach each other by service name — that's what
+# "OLLAMA_BASE_URL: http://ollama:11434" below assumes (replace `ollama`
+# with your Ollama service's actual name if it differs).
+services:
+  chatbot:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      ACTIVE_PROVIDER: ollama
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: llama3
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: "12345"
+      DB_PATH: /data/chatbot.db
+    volumes:
+      - chatbot-data:/data
+    restart: unless-stopped
+
+volumes:
+  chatbot-data:
