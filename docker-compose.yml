@@ -11,7 +11,7 @@ services:
     environment:
       ACTIVE_PROVIDER: ollama
       OLLAMA_BASE_URL: http://119.10.138.194:11434
-      OLLAMA_MODEL: qwen-3.5:2b
+      OLLAMA_MODEL: qwen3.5:2b
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: "12345"
       DB_PATH: /data/chatbot.db
