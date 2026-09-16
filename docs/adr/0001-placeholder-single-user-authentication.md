@@ -1,0 +1,3 @@
+# Placeholder single-user authentication
+
+At this stage the app has exactly one hardcoded account (admin/12345), authenticated via a login form and session cookie. There is no `User` entity or per-user ownership anywhere in the domain model — Conversations are not tied to a user at all. This is deliberate: real authentication and authorization (multi-user, proper credential storage, roles) is planned for a later phase, and designing the ownership model now would be speculative since the shape of that future auth system isn't known yet. When real auth arrives, expect a `User` entity to be introduced and Conversations to gain an owner.

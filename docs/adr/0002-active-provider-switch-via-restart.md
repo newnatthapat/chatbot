@@ -1,0 +1,3 @@
+# Active Provider switch via restart, not a runtime toggle
+
+Which Provider is active (Ollama vs. the future vLLM) is controlled by an `ACTIVE_PROVIDER` env var, not a persisted runtime flag toggled from an admin UI. Changing it requires editing config and restarting the backend. This was a deliberate choice over a DB-backed runtime toggle: since vLLM isn't deployed yet, instant switching has no current use, and env-var config keeps the app simpler at this stage. If frequent live switching becomes necessary once vLLM is deployed, expect this to be revisited in favor of a persisted, admin-toggleable setting.
