@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"chatbot-backend/internal/provider"
 	"chatbot-backend/internal/store"
@@ -38,7 +40,29 @@ func New(st *store.Store, p provider.Provider, adminUsername, adminPassword stri
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	start := time.Now()
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	s.mux.ServeHTTP(rec, r)
+	log.Printf("%s %s -> %d (%s)", r.Method, r.URL.Path, rec.status, time.Since(start).Round(time.Millisecond))
+}
+
+// statusRecorder captures the status code written by the wrapped handler so
+// it can be logged after the handler returns (needed for streamed SSE
+// responses, whose status is written well before the body finishes).
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(status int) {
+	r.status = status
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *statusRecorder) Flush() {
+	if f, ok := r.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func (s *Server) routes() {
@@ -231,6 +255,8 @@ func (s *Server) handlePostMessage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
 
+	log.Printf("conversation %d: requesting completion from provider (%d messages of history)", id, len(providerHistory))
+
 	var full strings.Builder
 	streamErr := s.provider.Stream(ctx, providerHistory,
 		func(tok string) {
@@ -253,6 +279,7 @@ func (s *Server) handlePostMessage(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if streamErr != nil {
+		log.Printf("conversation %d: provider stream failed: %v", id, streamErr)
 		writeSSE(w, "error", map[string]string{"message": streamErr.Error()})
 		if flusher != nil {
 			flusher.Flush()
