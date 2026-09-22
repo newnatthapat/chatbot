@@ -232,13 +232,25 @@ func (s *Server) handlePostMessage(w http.ResponseWriter, r *http.Request) {
 	flusher, _ := w.(http.Flusher)
 
 	var full strings.Builder
-	streamErr := s.provider.Stream(ctx, providerHistory, func(tok string) {
-		full.WriteString(tok)
-		writeSSE(w, "token", map[string]string{"token": tok})
-		if flusher != nil {
-			flusher.Flush()
-		}
-	})
+	streamErr := s.provider.Stream(ctx, providerHistory,
+		func(tok string) {
+			full.WriteString(tok)
+			writeSSE(w, "token", map[string]string{"token": tok})
+			if flusher != nil {
+				flusher.Flush()
+			}
+		},
+		// Thinking text isn't part of the reply and is never persisted —
+		// just forward a heartbeat so the connection keeps producing bytes
+		// (some models spend a long time "thinking" before any reply text)
+		// and the frontend can show that a response is in progress.
+		func(string) {
+			writeSSE(w, "thinking", map[string]bool{"active": true})
+			if flusher != nil {
+				flusher.Flush()
+			}
+		},
+	)
 
 	if streamErr != nil {
 		writeSSE(w, "error", map[string]string{"message": streamErr.Error()})

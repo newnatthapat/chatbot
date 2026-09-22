@@ -3,15 +3,24 @@
   --color-bg: #1a0a0a;
   --color-surface: #2a1010;
   --color-surface-alt: #3a1616;
+  --color-surface-raised: #331313;
   --color-border: #5a2020;
   --color-red: #e0332f;
   --color-red-hover: #ff4a44;
+  --color-red-soft: #45191a;
   --color-text: #f5e8e8;
   --color-text-muted: #c99;
+  --color-text-faint: #a87f7f;
   --color-error-bg: #4a1414;
   --color-error-text: #ffb3b0;
 
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+
+  --font-sans: "Kanit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
 }
 
 * {
@@ -28,6 +37,7 @@ body,
 body {
   background: var(--color-bg);
   color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
 }
 
 input,
@@ -42,8 +52,10 @@ button {
   background: var(--color-red);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
 }
 
 button:hover {
@@ -59,6 +71,17 @@ input {
   background: var(--color-surface-alt);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-red-hover);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-red);
+  color: white;
 }

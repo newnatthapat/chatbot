@@ -29,12 +29,13 @@ type ollamaChatRequest struct {
 
 type ollamaChatChunk struct {
 	Message struct {
-		Content string `json:"content"`
+		Content  string `json:"content"`
+		Thinking string `json:"thinking"`
 	} `json:"message"`
 	Done bool `json:"done"`
 }
 
-func (o *Ollama) Stream(ctx context.Context, history []Message, onToken func(string)) error {
+func (o *Ollama) Stream(ctx context.Context, history []Message, onToken func(string), onThinking func(string)) error {
 	body, err := json.Marshal(ollamaChatRequest{Model: o.model, Messages: history, Stream: true})
 	if err != nil {
 		return fmt.Errorf("provider: encode request: %w", err)
@@ -66,6 +67,9 @@ func (o *Ollama) Stream(ctx context.Context, history []Message, onToken func(str
 		var chunk ollamaChatChunk
 		if err := json.Unmarshal(line, &chunk); err != nil {
 			return fmt.Errorf("provider: decode stream chunk: %w", err)
+		}
+		if chunk.Message.Thinking != "" {
+			onThinking(chunk.Message.Thinking)
 		}
 		if chunk.Message.Content != "" {
 			onToken(chunk.Message.Content)

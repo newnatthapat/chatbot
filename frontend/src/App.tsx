@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import './App.css'
 import { listConversations } from './api/client'
 import { ChatPage } from './pages/ChatPage'
 import { LoginPage } from './pages/LoginPage'

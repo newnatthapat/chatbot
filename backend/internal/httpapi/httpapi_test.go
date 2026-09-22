@@ -17,14 +17,19 @@ import (
 	"chatbot-backend/internal/store"
 )
 
-// fakeProvider emits tokens in order, then returns failErr (nil on success).
-// A non-nil failErr with zero tokens simulates a failure before any output.
+// fakeProvider emits thinking chunks, then tokens, in order, then returns
+// failErr (nil on success). A non-nil failErr with zero tokens simulates a
+// failure before any output.
 type fakeProvider struct {
-	tokens  []string
-	failErr error
+	thinking []string
+	tokens   []string
+	failErr  error
 }
 
-func (f *fakeProvider) Stream(ctx context.Context, history []provider.Message, onToken func(string)) error {
+func (f *fakeProvider) Stream(ctx context.Context, history []provider.Message, onToken func(string), onThinking func(string)) error {
+	for _, tok := range f.thinking {
+		onThinking(tok)
+	}
 	for _, tok := range f.tokens {
 		onToken(tok)
 	}
@@ -192,6 +197,36 @@ func TestSendMessageStreamsAndPersistsBothMessages(t *testing.T) {
 	}
 	if msgs[1].Role != "assistant" || msgs[1].Content != "Hi there" {
 		t.Errorf("msgs[1] = %+v, want role=assistant content=%q", msgs[1], "Hi there")
+	}
+}
+
+func TestSendMessageForwardsThinkingWithoutPersistingIt(t *testing.T) {
+	c := newTestServer(t, &fakeProvider{thinking: []string{"hmm", "ok"}, tokens: []string{"Hi"}})
+	c.mustLogin()
+
+	created := decodeJSON[struct {
+		ID int64 `json:"id"`
+	}](t, c.do(http.MethodPost, "/api/conversations", nil))
+
+	resp := c.do(http.MethodPost, fmt.Sprintf("/api/conversations/%d/messages", created.ID), map[string]string{"content": "hello"})
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read stream: %v", err)
+	}
+	streamed := string(body)
+	if !strings.Contains(streamed, "event: thinking") {
+		t.Fatalf("streamed body = %q, want a thinking event", streamed)
+	}
+
+	msgsResp := c.do(http.MethodGet, fmt.Sprintf("/api/conversations/%d/messages", created.ID), nil)
+	msgs := decodeJSON[[]struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}](t, msgsResp)
+
+	if len(msgs) != 2 || msgs[1].Content != "Hi" {
+		t.Fatalf("messages = %+v, want the assistant message to be exactly %q with no thinking text mixed in", msgs, "Hi")
 	}
 }
 

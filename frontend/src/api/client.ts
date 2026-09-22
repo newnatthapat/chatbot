@@ -13,6 +13,10 @@ export type StreamHandlers = {
   onToken: (token: string) => void
   onDone: () => void
   onError: (message: string) => void
+  // Some models spend a while "thinking" before any reply token arrives.
+  // This fires per thinking chunk, purely so the UI can show that a
+  // response is in progress — the text itself is never exposed.
+  onThinking?: () => void
 }
 
 async function request(path: string, init?: RequestInit): Promise<Response> {
@@ -111,6 +115,7 @@ function handleFrame(frame: string, handlers: StreamHandlers): void {
 
   const parsed = JSON.parse(data)
   if (event === 'token') handlers.onToken(parsed.token)
+  else if (event === 'thinking') handlers.onThinking?.()
   else if (event === 'done') handlers.onDone()
   else if (event === 'error') handlers.onError(parsed.message)
 }
